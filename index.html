@@ -1,0 +1,35 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShortsPilot AUTOPILOT</title><style>
+*{box-sizing:border-box}body{margin:0;background:#070c17;color:#edf2ff;font-family:Tahoma,Arial}.wrap{max-width:1200px;margin:auto;padding:22px}
+header{display:flex;justify-content:space-between;align-items:center}.logo{font-size:26px;font-weight:900}.logo b{color:#ff315c}
+button{border:0;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:700}.p{background:#ff315c;color:#fff}.d{background:#202a43;color:#fff}.danger{background:#552634;color:#fff}
+.card{background:#11192b;border:1px solid #27334d;border-radius:16px;padding:17px;margin:15px 0}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.metric{font-size:27px;font-weight:900;margin-top:7px}.muted{color:#94a1be}
+.tabs{display:flex;gap:7px;overflow:auto;margin:18px 0}.tabs .active{background:#ff315c;color:#fff}.panel{display:none}.panel.active{display:block}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}input,textarea{width:100%;background:#0b1323;color:#fff;border:1px solid #34405b;border-radius:9px;padding:11px;margin-top:6px}
+table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #28334e;text-align:right}.score{padding:4px 8px;border-radius:20px;background:#3b3215;color:#ffd96c}.ok{color:#62e2ad}
+.notice{padding:13px;border:1px solid #66531d;background:#211b0d;color:#f0d36a;border-radius:11px;line-height:1.8}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.full{grid-column:auto}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<header><div class="logo">Shorts<b>Pilot</b> AUTOPILOT</div><div><button class="p" onclick="location.href='/auth/google'">اتصال YouTube</button> <button class="d" onclick="off()">قطع اتصال</button></div></header>
+<div class="notice">پس از اتصال، Worker هر ۵ دقیقه صف را بررسی می‌کند. انتشار خودکار به‌طور پیش‌فرض Private است تا قبل از عمومی‌کردن، سیستم را آزمایش کنی.</div>
+<div class="grid"><div class="card"><div class="muted">کانال</div><div class="metric" id="ch">—</div></div><div class="card"><div class="muted">صف</div><div class="metric" id="q">0</div></div><div class="card"><div class="muted">انتشار امروز</div><div class="metric" id="p">0</div></div><div class="card"><div class="muted">حالت</div><div class="metric ok">24/7</div></div></div>
+<div class="tabs"><button class="d active" onclick="tab('dash',this)">داشبورد</button><button class="d" onclick="tab('ideas',this)">ایده</button><button class="d" onclick="tab('upload',this)">محتوا</button><button class="d" onclick="tab('queue',this)">صف</button><button class="d" onclick="tab('stats',this)">آمار</button></div>
+<section id="dash" class="panel active"><div class="card"><h2>وضعیت اتوماسیون</h2><p>بعد از اتصال، توکن Refresh در دیتابیس ذخیره می‌شود تا سرویس بتواند بدون حضور تو توکن دسترسی جدید بگیرد. این همان الگوی OAuth سرور-ساید گوگل است. </p><p class="muted">برای تولید خودکار خودِ ویدئو، یک Video/AI provider باید در سرور پیکربندی شود؛ این پروژه رابط provider را برای اتصال بعدی نگه می‌دارد و بدون کلید آن ادعا نمی‌کند که ویدئو را از هیچ تولید می‌کند.</p></div></section>
+<section id="ideas" class="panel"><div class="card"><h2>ایده‌ساز</h2><input id="topic" placeholder="موضوع کانال"><button class="p" onclick="ideas()">تولید</button><div id="ideas"></div></div></section>
+<section id="upload" class="panel"><div class="card"><h2>محتوا</h2><form id="form"><div><label>ویدئو</label><input type="file" name="video" accept="video/*" required></div><div><label>عنوان</label><input name="title" required maxlength="100"></div><div class="full"><label>Hook</label><input name="hook" placeholder="جمله‌ای که در ۲ ثانیه اول می‌آید"></div><div class="full"><label>توضیحات</label><textarea name="description" rows="3"></textarea></div><div><label>تگ‌ها</label><input name="tags" value="shorts"></div><div><label>زمان اختیاری</label><input type="datetime-local" name="scheduled_at"></div><div class="full"><label>منبع/مجوز</label><input name="source_url" placeholder="URL"><input name="license_note" placeholder="نوع مجوز"></div><button class="p">قرار دادن در صف</button></form></div></section>
+<section id="queue" class="panel"><div class="card"><h2>صف خودکار</h2><table><thead><tr><th>عنوان</th><th>امتیاز</th><th>وضعیت</th><th></th></tr></thead><tbody id="list"></tbody></table></div></section>
+<section id="stats" class="panel"><div class="card"><h2>آمار</h2><button class="p" onclick="stats()">بروزرسانی</button><div id="stat"></div></div></section>
+</div><script>
+const $=id=>document.getElementById(id);async function api(u,o){let r=await fetch(u,o),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||"خطا");return j}
+function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(id==='queue')load()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+async function refresh(){let s=await api('/api/status');$('ch').textContent=s.connected?(s.channel||'متصل'):'قطع';$('q').textContent=s.queued;$('p').textContent=s.publishedToday}
+$('form').onsubmit=async e=>{e.preventDefault();try{let j=await api('/api/videos',{method:'POST',body:new FormData(e.target)});alert('امتیاز اولیه: '+j.score+'/100');e.target.reset();refresh()}catch(x){alert(x.message)}}
+async function load(){let a=await api('/api/videos');$('list').innerHTML=a.map(v=>`<tr><td>${esc(v.title)}</td><td><span class="score">${v.score}/100</span></td><td>${esc(v.status)}</td><td>${v.status!=='published'?`<button class="p" onclick="pub(${v.id})">آپلود خصوصی</button>`:''} <button class="danger" onclick="delv(${v.id})">حذف</button></td></tr>`).join('')}
+async function pub(id){try{await api('/api/videos/'+id+'/publish',{method:'POST'});load();refresh()}catch(x){alert(x.message)}}
+async function delv(id){await api('/api/videos/'+id,{method:'DELETE'});load();refresh()}
+async function off(){await api('/api/disconnect',{method:'POST'});refresh()}
+async function ideas(){let j=await api('/api/ideas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:$('topic').value})});$('ideas').innerHTML=j.ideas.map(x=>`<p>${esc(x.title)} — <span class="score">${x.score}</span></p>`).join('')}
+async function stats(){try{let j=await api('/api/analytics');$('stat').innerHTML='<h2>'+Number(j.views).toLocaleString()+' بازدید</h2><p>'+Number(j.likes).toLocaleString()+' لایک</p>'}catch(x){alert(x.message)}}
+refresh();load();
+</script></body></html>
